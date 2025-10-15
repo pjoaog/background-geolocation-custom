@@ -81,10 +81,15 @@ public class BackgroundGeolocationService extends Service {
                     BackgroundGeolocationService.this
             );
             LocationRequest locationRequest = new LocationRequest();
-            locationRequest.setMaxWaitTime(1000);
-            locationRequest.setInterval(1000);
+
+            // Request location every 30s regardless of movement to keep background timer running
+            locationRequest.setInterval(30000); // 30 seconds
             locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-            locationRequest.setSmallestDisplacement(distanceFilter);
+            locationRequest.setSmallestDisplacement(0f); // no movement required
+
+            // MaxWaitTime is intentionally omitted to avoid batching updates,
+            // ensuring the app receives each location promptly for the background timer
+            //locationRequest.setMaxWaitTime(1000);
 
             LocationCallback callback = new LocationCallback(){
                 @Override
