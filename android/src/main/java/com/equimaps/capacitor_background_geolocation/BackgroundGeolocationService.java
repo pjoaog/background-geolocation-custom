@@ -82,14 +82,35 @@ public class BackgroundGeolocationService extends Service {
             );
             LocationRequest locationRequest = new LocationRequest();
 
-            // Request location every 30s regardless of movement to keep background timer running
-            locationRequest.setInterval(30000); // 30 seconds
+            // Request location every 30s regardless of movement (fallback) but prefer
+            // distance-based updates
+            locationRequest.setInterval(30000); // 30 seconds preferred interval
             locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-            locationRequest.setSmallestDisplacement(0f); // no movement required
+            locationRequest.setSmallestDisplacement(distanceFilter); // respect movement threshold
 
-            // MaxWaitTime is intentionally omitted to avoid batching updates,
-            // ensuring the app receives each location promptly for the background timer
-            //locationRequest.setMaxWaitTime(1000);
+            final long fallbackInterval = 30000; // 30s fallback timer
+            final android.os.Handler handler = new android.os.Handler();
+            final String watcherId = id;
+
+            final Runnable fallbackTask = new Runnable() {
+                @Override
+                public void run() {
+                    // Trigger a manual update if no location has been received recently
+                    try {
+                        client.getLastLocation().addOnSuccessListener(location -> {
+                            if (location != null) {
+                                Intent intent = new Intent(ACTION_BROADCAST);
+                                intent.putExtra("location", location);
+                                intent.putExtra("id", watcherId);
+                                LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
+                            }
+                        });
+                    } catch (SecurityException ignored) {
+                    }
+                    handler.postDelayed(this, fallbackInterval);
+                }
+            };
+            handler.postDelayed(fallbackTask, fallbackInterval);
 
             LocationCallback callback = new LocationCallback(){
                 @Override
@@ -101,7 +122,12 @@ public class BackgroundGeolocationService extends Service {
                     LocalBroadcastManager.getInstance(
                             getApplicationContext()
                     ).sendBroadcast(intent);
+
+                    // Restart fallback timer when a new update arrives
+                    handler.removeCallbacks(fallbackTask);
+                    handler.postDelayed(fallbackTask, fallbackInterval);
                 }
+
                 @Override
                 public void onLocationAvailability(LocationAvailability availability) {
                     if (!availability.isLocationAvailable()) {
