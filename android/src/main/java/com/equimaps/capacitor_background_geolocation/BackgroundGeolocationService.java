@@ -95,14 +95,18 @@ public class BackgroundGeolocationService extends Service {
             final Runnable fallbackTask = new Runnable() {
                 @Override
                 public void run() {
-                    // Trigger a manual update if no location has been received recently
+                    Logger.debug("[LocationService] fallback timer disparou");
                     try {
                         client.getLastLocation().addOnSuccessListener(location -> {
                             if (location != null) {
+                                Logger.debug("[LocationService] fallback enviou localização: " +
+                                            location.getLatitude() + "," + location.getLongitude());
                                 Intent intent = new Intent(ACTION_BROADCAST);
                                 intent.putExtra("location", location);
                                 intent.putExtra("id", watcherId);
                                 LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
+                            } else {
+                                Logger.debug("[LocationService] Fallback got null location");
                             }
                         });
                     } catch (SecurityException ignored) {
@@ -116,6 +120,8 @@ public class BackgroundGeolocationService extends Service {
                 @Override
                 public void onLocationResult(LocationResult locationResult) {
                     Location location = locationResult.getLastLocation();
+                    Logger.debug("[LocationService] distanceFilter enviou update: " +
+                                location.getLatitude() + "," + location.getLongitude());
                     Intent intent = new Intent(ACTION_BROADCAST);
                     intent.putExtra("location", location);
                     intent.putExtra("id", id);
@@ -125,13 +131,14 @@ public class BackgroundGeolocationService extends Service {
 
                     // Restart fallback timer when a new update arrives
                     handler.removeCallbacks(fallbackTask);
+                    Logger.debug("[LocationService] fallback reiniciado");
                     handler.postDelayed(fallbackTask, fallbackInterval);
                 }
 
                 @Override
                 public void onLocationAvailability(LocationAvailability availability) {
                     if (!availability.isLocationAvailable()) {
-                        Logger.debug("Location not available");
+                        Logger.debug("[LocationService] Location not available");
                     }
                 }
             };
