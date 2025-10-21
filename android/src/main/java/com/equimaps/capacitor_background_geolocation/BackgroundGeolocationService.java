@@ -92,10 +92,10 @@ public class BackgroundGeolocationService extends Service {
             LocationRequest locationRequest = new LocationRequest();
             // GPS wakes up ONLY when device moves
             locationRequest.setSmallestDisplacement(distanceFilter);
-            // Check for movement every 5s
-            locationRequest.setInterval(5000);
+            // Check for movement every 1s
+            locationRequest.setInterval(1000);
             // Immediate updates on fast movement
-            locationRequest.setFastestInterval(3000);
+            locationRequest.setFastestInterval(500);
             locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
             // Fallback 

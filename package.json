@@ -1,6 +1,6 @@
 {
     "name": "@pjoaog/background-geolocation-custom",
-    "version": "1.2.28-custom",
+    "version": "1.2.29-custom",
     "description": "Receive geolocation updates even while the app is in the background.",
     "repository": {
         "type": "git",
